@@ -9,19 +9,18 @@
 
 #include "functions.hpp"
 
-std::mutex mtx_;
-std::condition_variable cond_;
-bool secondOut_ = true;
-Buffer buffer_;
-
-void functions::runFirstThread()
+void functions::runFirstThread(
+  std::shared_ptr< std::mutex >               sharedMtx,
+  std::shared_ptr< std::condition_variable >  sharedCond,
+  std::shared_ptr< Buffer >                   sharedBuff,
+  bool&                                       secondOut)
 {
   while (true)
   {
-    std::unique_lock< std::mutex > lg{ mtx_ };
-    cond_.wait(lg,[&]()
+    std::unique_lock< std::mutex > lg{ *sharedMtx };
+    (*sharedCond).wait(lg,[&]()
     {
-      return secondOut_;
+      return secondOut;
     });
     std::string numStr = "";
     numStr = readFromInput();
@@ -32,13 +31,19 @@ void functions::runFirstThread()
     }
     handleNumString(numStr);
 
-    buffer_.push(numStr);
-    secondOut_ = false;
-    cond_.notify_one();
+    (*sharedBuff).push(numStr);
+    secondOut = false;
+    (*sharedCond).notify_one();
   }
 }
 
-void functions::runSecondThread(int& sock, int& listener)
+void functions::runSecondThread(
+  std::shared_ptr< std::mutex >               sharedMtx,
+  std::shared_ptr< std::condition_variable >  sharedCond,
+  std::shared_ptr< Buffer >                   sharedBuff,
+  bool &                                      secondOut,
+  int  &                                      sock,
+  int  &                                      listener)
 {
   bool secondConnected = false;
   auto plusLambda = [] (const int& _lx, const int& _rx) -> int
@@ -48,13 +53,13 @@ void functions::runSecondThread(int& sock, int& listener)
 
   while (true)
   {
-    std::unique_lock< std::mutex > lg{ mtx_ };
-    cond_.wait(lg,[&]()
+    std::unique_lock< std::mutex > lg{ *sharedMtx };
+    (*sharedCond).wait(lg,[&]()
     {
-      return !buffer_.empty();
+      return !(*sharedBuff).empty();
     });
 
-    std::string dataStr = buffer_.pop();
+    std::string dataStr = (*sharedBuff).pop();
     std::cout << "result line: " << dataStr << '\n';
     int sum = std::accumulate(dataStr.begin(), dataStr.end(), 0, plusLambda);
 
@@ -95,8 +100,8 @@ void functions::runSecondThread(int& sock, int& listener)
     }
     std::cout << '\n';
 
-    secondOut_ = true;
-    cond_.notify_one();
+    secondOut = true;
+    (*sharedCond).notify_one();
   }
 }
 
