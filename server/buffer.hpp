@@ -7,11 +7,11 @@
 class Buffer
 {
 private:
-  std::string str_;
+    std::string str_;
 public:
-  bool empty();
-  void push(const std::string& x);
-  std::string pop();
+    bool empty();
+    void push(const std::string& x);
+    std::string pop();
 };
 
 #endif
