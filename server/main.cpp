@@ -50,25 +50,10 @@ int main()
         std::cout << "connected to program 2\n";
     }
 
-    std::mutex mtx;
-    std::condition_variable cond;
-    Buffer buffer;
-    bool secondOut = true;
-
-    std::thread firstThread(
-        functions::runFirstThread,
-        std::make_shared<std::mutex>(mtx),
-        std::make_shared<std::condition_variable>(cond),
-        std::make_shared<Buffer>(buffer),
-        std::ref(secondOut)
-    );
+    std::thread firstThread(functions::runFirstThread);
 
     std::thread secondThread(
         functions::runSecondThread,
-        std::make_shared<std::mutex>(mtx),
-        std::make_shared<std::condition_variable>(cond),
-        std::make_shared<Buffer>(buffer),
-        std::ref(secondOut),
         std::ref(sock),
         std::ref(listener)
     );

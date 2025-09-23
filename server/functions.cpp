@@ -9,17 +9,18 @@
 
 #include "functions.hpp"
 
-void functions::runFirstThread(
-    std::shared_ptr<std::mutex>              sharedMtx,
-    std::shared_ptr<std::condition_variable> sharedCond,
-    std::shared_ptr<Buffer>                  sharedBuff,
-    bool&                                    secondOut)
+std::mutex mutex;
+std::condition_variable condVar;
+Buffer buffer;
+bool secondOut = true;
+
+void functions::runFirstThread()
 {
     while (true)
     {
-        std::unique_lock<std::mutex> lg{ *sharedMtx };
+        std::unique_lock<std::mutex> lock{mutex};
 
-        (*sharedCond).wait(lg, [&]() { return secondOut; });
+        condVar.wait(lock, [&]() { return secondOut; });
 
         std::string numStr = "";
 
@@ -32,21 +33,17 @@ void functions::runFirstThread(
 
         handleNumString(numStr);
 
-        (*sharedBuff).push(numStr);
+        buffer.push(numStr);
 
         secondOut = false;
 
-        (*sharedCond).notify_one();
+        condVar.notify_one();
     }
 }
 
 void functions::runSecondThread(
-    std::shared_ptr<std::mutex>               sharedMtx,
-    std::shared_ptr<std::condition_variable>  sharedCond,
-    std::shared_ptr<Buffer>                   sharedBuff,
-    bool &                                      secondOut,
-    int  &                                      sock,
-    int  &                                      listener)
+    int& sock,
+    int& listener)
 {
     bool secondConnected = false;
 
@@ -57,11 +54,11 @@ void functions::runSecondThread(
 
     while (true)
     {
-        std::unique_lock<std::mutex> lg{ *sharedMtx };
+        std::unique_lock<std::mutex> lock{mutex};
 
-        (*sharedCond).wait(lg,[&](){ return !(*sharedBuff).empty(); });
+        condVar.wait(lock,[&](){ return !buffer.empty(); });
 
-        std::string dataStr = (*sharedBuff).pop();
+        std::string dataStr = buffer.pop();
         std::cout << "result line: " << dataStr << '\n';
 
         int sum = std::accumulate(dataStr.begin(), dataStr.end(), 0, plusLambda);
@@ -110,7 +107,7 @@ void functions::runSecondThread(
         std::cout << '\n';
 
         secondOut = true;
-        (*sharedCond).notify_one();
+        condVar.notify_one();
     }
 }
 
