@@ -1,76 +1,63 @@
-#include <iostream>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
-#include <cmath>
+#include <fcntl.h>
+#include <iostream>
+#include <thread>
+
+#include "functions.hpp"
 
 int main()
 {
-    int sock;
+    int sock, listener;
     struct sockaddr_in addr;
+    char data[3];
+    int bytes_read;
 
-    sock = socket(AF_INET, SOCK_STREAM, 0);
+    listener = socket(AF_INET, SOCK_STREAM, 0);
 
-    if (sock < 0)
+    if (listener < 0)
     {
         std::cerr << "error: socket\n";
         return 1;
     }
 
+    fcntl(listener, F_SETFL, O_NONBLOCK);
+
     addr.sin_family = AF_INET;
     addr.sin_port = htons(5421);
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    int yes = 1;
 
-    const int N = 3;
-
-    while (true)
+    if (setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
     {
-        sock = socket(AF_INET, SOCK_STREAM, 0);
-
-        if (sock < 0)
-        {
-            std::cerr << "error: socket\n";
-            return 1;
-        }
-
-        if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-        {
-            std::cout << "connection waiting...\n";
-            close(sock);
-            sleep(1);
-            continue;
-        }
-
-        std::cout << "connected to program 1\n";
-
-        while (true)
-        {
-            char data[N];
-            int dataSize = recv(sock, data, N, 0);
-
-            if (dataSize <= 0)
-            {
-                std::cerr << "error: data is not received\n";
-                close(sock);
-                break;
-            }
-
-            int sum = 0;
-
-            for (int i = 0; i < dataSize; i++)
-            {
-                sum = sum * 10 + (data[i] - '0');
-            }
-
-            if ((dataSize > 2) && (sum % 32 == 0))
-            {
-                std::cout << "data received: sum = " << sum << '\n';
-            }
-            else
-            {
-                std::cerr << "error: received data is incorrect: sum = " << sum << "\n";
-            }
-        }
+        std::cerr << "error: setsockopt\n";
+        return 2;
     }
+
+    if (bind(listener, (struct sockaddr *)& addr, sizeof(addr)) < 0)
+    {
+        std::cerr << "error: bind\n";
+        return 2;
+    }
+
+    listen(listener, 1);
+    sock = accept(listener, nullptr, nullptr);
+
+    if (sock >= 0)
+    {
+        std::cout << "connected to program 2\n";
+    }
+
+    std::thread firstThread(functions::runFirstThread);
+
+    std::thread secondThread(
+        functions::runSecondThread,
+        std::ref(sock),
+        std::ref(listener)
+    );
+
+    firstThread.join();
+    secondThread.join();
 }

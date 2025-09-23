@@ -8,11 +8,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(OUT_ARTIFACTS "${PROJECT_BINARY_DIR}/build/")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${OUT_ARTIFACTS}/bin/")
 
-set(CLIENT_MAIN client/main.cpp)
-add_executable(client ${CLIENT_MAIN})
-
 set(SERVER_MAIN server/main.cpp)
-set(SERVER_SOURCES server/buffer.cpp server/functions.cpp)
-add_executable(server ${SERVER_MAIN} ${SERVER_SOURCES})
-target_link_libraries(server pthread)
+add_executable(server ${SERVER_MAIN})
+
+set(CLIENT_MAIN client/main.cpp)
+set(CLIENT_SOURCES client/buffer.cpp client/functions.cpp)
+add_executable(client ${CLIENT_MAIN} ${CLIENT_SOURCES})
+target_link_libraries(client pthread)
 
