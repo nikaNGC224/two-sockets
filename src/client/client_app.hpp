@@ -6,7 +6,8 @@
 #include <chrono>
 #include <netinet/in.h>
 #include <fcntl.h>
-#include <iostream>
+
+#include "../../utils/log.hpp"
 
 class ClientApp
 {
@@ -36,8 +37,7 @@ private:
 
         if (_socket < 0)
         {
-            printf("error: socket");
-            printf("\n");
+            Log::printError("Init socket");
 
             return 1;
         }
@@ -70,15 +70,13 @@ private:
 
                 if (res == 0)
                 {
-                    printf("Client has connected to server");
-                    printf("\n");
+                    Log::printInfo("Client has connected to server");
 
                     return 0;
                 }
                 else
                 {
-                    printf("Connecting to server...");
-                    printf("\n");
+                    Log::printInfo("Connecting to server...");
                 }
             }
         }
@@ -86,12 +84,11 @@ private:
 
     auto sendDataToClient() -> void
     {
-        auto test = "Hello!";
+        std::string test {"Hello!"};
 
-        printf("Send message \"%s\" to server", test);
-        printf("\n");
+        Log::printInfo("Send message \"" + test + "\" to server");
 
-        ::send(_socket, test, 6, 0);
+        ::send(_socket, test.c_str(), 6, 0);
     }
 
     int         _socket {};

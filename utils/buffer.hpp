@@ -3,6 +3,8 @@
 
 #include <type_traits>
 
+#include "log.hpp"
+
 template <typename T, size_t MAX_SIZE>
 class Buffer
 {
@@ -15,37 +17,47 @@ public:
     auto push_back(const T& x) -> void
     {
         static_assert(_size < get_max_size(), "Buffer is full");
-
-        ++_iterator;
-
-        _data[_iterator] = x;
+        _data[++_iterator] = x;
 
         ++_size;
+        _isDataChanged = true;
     }
 
     auto pop_back() -> T
     {
         if (empty())
         {
-            printf("\n");
-            printf("Buffer is empty");
+            Log::printError("Buffer is empty");
 
             exit;
         }
 
         auto temp = T{};
+        std::swap(_data[_iterator--], temp);
 
-        std::swap(_data[_iterator], temp);
-
-        --_iterator;
         --_size;
+        _isDataChanged = true;
 
         return temp;
     }
 
     auto data() -> T*
     {
+        _isDataChanged = true;
+
         return _data;
+    }
+
+    auto get_string() -> std::string
+    {
+        static std::string str {};
+
+        if (_isDataChanged)
+        {
+            str = std::string{_data};
+        }
+
+        return str;
     }
 
     constexpr auto get_max_size() -> size_t
@@ -63,6 +75,7 @@ private:
     size_t _iterator {0};
     size_t _size {0};
 
+    bool _isDataChanged {false};
 };
 
 #endif

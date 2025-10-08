@@ -3,12 +3,11 @@
 #ifndef SERVER_APP_HPP
 #define SERVER_APP_HPP
 
-// #include <chrono>
 #include <netinet/in.h>
 #include <fcntl.h>
-#include <iostream>
 
 #include "../../utils/buffer.hpp"
+#include "../../utils/log.hpp"
 
 class ServerApp
 {
@@ -38,8 +37,7 @@ private:
 
         if (_socket < 0)
         {
-            printf("error: socket");
-            printf("\n");
+            Log::printError("Init socket");
 
             return 1;
         }
@@ -63,15 +61,13 @@ private:
 
         if (_clientSocket != -1)
         {
-            printf("Client has connected to server");
-            printf("\n");
+            Log::printInfo("Client has connected to server");
 
             return 0;
         }
         else
         {
-            printf("Connecting is failed");
-            printf("\n");
+            Log::printError("Connecting is failed");
 
             return 1;
         }
@@ -86,8 +82,7 @@ private:
 
         if (readBytes > 0)
         {
-            printf("Received message: \"%s\"", _buffer.data());
-            printf("\n");
+            Log::printInfo("Received message: \"" + _buffer.get_string() + "\"");
         }
     }
 
